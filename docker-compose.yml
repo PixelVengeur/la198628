@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Pas oublier de modifier /etc/hosts en rajoutant les noms de domaine sur 127.0.0.1
+
+services:
+  traefik:
+    image: traefik
+    
+    ports:
+      - 80:80
+    
+    command:
+      - --log.level=DEBUG
+      - --api.insecure=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    labels:
+      - traefik.docker.network=nt-traefik
+      - traefik.http.routers.dash.entrypoints=web
+      - traefik.http.routers.dash.rule=Host(`dash.test.helha.local`)
+      - traefik.http.services.dash.loadbalancer.server.port=8080
+    
+    networks:
+      - nt-traefik
+
+
+  portainer:
+    image: portainer/portainer-ce
+    
+    labels:
+      - traefik.docker.network=nt-traefik
+      - traefik.http.routers.portainer.entrypoints=web
+      - traefik.http.routers.portainer.rule=Host(`portainer.test.helha.local`)
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+    
+    volumes:
+      - dataportainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/timezone:/etc/timezone:ro
+    
+    restart: always
+    
+    networks:
+      - nt-traefik
+
+volumes:
+  dataportainer:
+  wordpress:
+  db:
+
+networks:
+  nt-traefik:
+    external: true
